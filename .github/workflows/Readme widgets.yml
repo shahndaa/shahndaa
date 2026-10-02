@@ -1,0 +1,55 @@
+name: Generate README Widgets
+
+on:
+  schedule:
+    - cron: "0 0 * * *" # once a day
+  workflow_dispatch: {}
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  stats:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+
+      - name: Generate stats card
+        uses: stats-organization/github-readme-stats-action@v2
+        with:
+          card: stats
+          options: username=shahndaa&show_icons=true&theme=tokyonight&hide_border=true&count_private=true
+          path: assets/stats.svg
+          token: ${{ secrets.TROPHY_TOKEN  }}
+
+      - name: Generate top languages card
+        uses: stats-organization/github-readme-stats-action@v2
+        with:
+          card: top-langs
+          options: username=shahndaa&layout=compact&theme=tokyonight&hide_border=true
+          path: assets/top-langs.svg
+          token: ${{ secrets.TROPHY_TOKEN  }}
+
+      - name: Generate trophy card
+        uses: Erik-Donath/github-profile-trophy@feature/generate-svg
+        with:
+          username: shahndaa
+          file: assets/trophy.svg
+          token: ${{ secrets.TROPHY_TOKEN  }}
+
+      - name: Commit generated assets
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add assets/stats.svg assets/top-langs.svg assets/trophy.svg
+          if ! git diff --staged --quiet; then
+            git commit -m "chore: update README widgets"
+            git fetch origin main
+            git reset --soft origin/main
+            git commit --amend -m "chore: update README widgets" || git commit -m "chore: update README widgets"
+            git push origin main --force
+          fi
